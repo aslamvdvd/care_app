@@ -1,0 +1,169 @@
+<!-- problem_solver_app/templates/problem_solver_app/index.html -->
+<!-- This is the HTML template for your web application. -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Personalized Problem Solver</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Basic styling for prose-like content for LLM output */
+        .prose p {
+            margin-bottom: 1em;
+        }
+        .prose ul {
+            list-style-type: disc;
+            margin-left: 1.5em;
+            margin-bottom: 1em;
+        }
+        .prose ol {
+            list-style-type: decimal;
+            margin-left: 1.5em;
+            margin-bottom: 1em;
+        }
+        .prose strong {
+            font-weight: 700;
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-purple-50 to-indigo-100 flex items-center justify-center p-4">
+        {% load custom_filters %} {# <--- ADD THIS LINE HERE #}
+
+    <div class="bg-white p-8 rounded-2xl shadow-xl w-full max-w-3xl border border-gray-200">
+        <h1 class="text-4xl font-extrabold text-center text-purple-800 mb-6 drop-shadow-sm">
+            Personalized Problem Solver
+        </h1>
+        <p class="text-center text-gray-600 mb-8 text-lg">
+            Tell us about yourself and your problem, and we'll craft a tailored path to help you overcome it.
+        </p>
+
+        <!-- Input Form Section -->
+        {% if not solution_path %}
+        <form method="post" class="space-y-6">
+            {% csrf_token %} {# Django's CSRF protection #}
+
+            <!-- Name Input -->
+            <div>
+                <label for="name" class="block text-lg font-medium text-gray-700 mb-2">
+                    Your Name:
+                </label>
+                <input
+                    type="text"
+                    id="name"
+                    name="name"
+                    value="{{ name }}"
+                    class="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-purple-500 focus:border-purple-500 transition duration-200 ease-in-out"
+                    placeholder="e.g., Alex"
+                    required
+                />
+
+                <label for="gender" class="block text-lg font-medium text-gray-700 mb-2">
+                    Gender:
+                </label>
+                <input
+                    type="text"
+                    id="gender"
+                    name="gender"
+                    value="{{gender }}"
+                    class="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-purple-500 focus:border-purple-500 transition duration-200 ease-in-out"
+                    placeholder="e.g., Female"
+                    required
+                />
+            </div>
+
+            <!-- Hobbies Selection -->
+            <div>
+                <label class="block text-lg font-medium text-gray-700 mb-2">
+                    Your Hobbies:
+                </label>
+                <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 mb-4">
+                    {% for hobby in common_hobbies %}
+                    <label class="flex items-center space-x-2 cursor-pointer bg-gray-50 p-3 rounded-lg border border-gray-200 hover:bg-gray-100 transition duration-200 ease-in-out">
+                        <input
+                            type="checkbox"
+                            name="hobbies"
+                            value="{{ hobby }}"
+                            {% if hobby in hobbies %}checked{% endif %}
+                            class="form-checkbox h-5 w-5 text-purple-600 rounded focus:ring-purple-500"
+                        />
+                        <span class="text-gray-800 text-base">{{ hobby }}</span>
+                    </label>
+                    {% endfor %}
+                </div>
+                <label for="customHobby" class="block text-base font-medium text-gray-700 mb-2">
+                    Other Hobbies (comma-separated):
+                </label>
+                <input
+                    type="text"
+                    id="customHobby"
+                    name="customHobby"
+                    value="{{ custom_hobby }}"
+                    class="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-purple-500 focus:border-purple-500 transition duration-200 ease-in-out"
+                    placeholder="e.g., painting, hiking, chess"
+                />
+            </div>
+
+            <!-- Problem Description -->
+            <div>
+                <label for="problem" class="block text-lg font-medium text-gray-700 mb-2">
+                    Describe the Problem You Are Facing:
+                </label>
+                <textarea
+                    id="problem"
+                    name="problem"
+                    rows="6"
+                    class="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-purple-500 focus:border-purple-500 transition duration-200 ease-in-out resize-y"
+                    placeholder="e.g., I'm struggling with time management for my projects, or I feel overwhelmed by my workload."
+                    required
+                >{{ problem }}</textarea>
+            </div>
+
+            <!-- Error Message -->
+            {% if error_message %}
+            <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg relative" role="alert">
+                <strong class="font-bold">Error:</strong>
+                <span class="block sm:inline ml-2">{{ error_message }}</span>
+            </div>
+            {% endif %}
+
+            <!-- Generate Button -->
+            <button
+                type="submit"
+                class="w-full py-3 px-6 rounded-lg text-white font-semibold text-lg shadow-md transition duration-300 ease-in-out bg-purple-600 hover:bg-purple-700 focus:ring-4 focus:ring-purple-300 transform hover:-translate-y-0.5"
+            >
+                Generate Personalized Path
+            </button>
+        </form>
+        {% else %}
+        <!-- Solution Display Section -->
+        <div class="bg-white p-6 rounded-lg border border-gray-200 shadow-inner">
+            <h2 class="text-3xl font-bold text-purple-700 mb-4 text-center">
+                Hello {{ name }}! Here's Your Tailored Path:
+            </h2>
+            <div class="prose prose-lg max-w-none text-gray-800 leading-relaxed">
+                <!-- Render the solution path, preserving line breaks -->
+                {% for line in solution_path|splitlines %}
+                    <p class="mb-2">{{ line }}</p>
+                {% endfor %}
+            </div>
+
+            <form method="get" action="{% url 'home' %}">
+                <button
+                    type="submit"
+                    class="mt-8 w-full py-3 px-6 rounded-lg bg-indigo-600 text-white font-semibold text-lg shadow-md hover:bg-indigo-700 focus:ring-4 focus:ring-indigo-300 transition duration-300 ease-in-out transform hover:-translate-y-0.5"
+                >
+                    Start Over
+                </button>
+            </form>
+        </div>
+        {% endif %}
+    </div>
+</body>
+</html>
