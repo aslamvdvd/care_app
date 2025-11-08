@@ -41,7 +41,7 @@ This web app collects some basic information about the user (name, gender, hobbi
 ## Setup & Installation
 1. **Clone the repository:**
    ```bash
-   git clone <your-repo-url>
+   git clone https://github.com/aslamvdvd/care_app.git
    cd care_app
    ```
 2. **Create a virtual environment:**
